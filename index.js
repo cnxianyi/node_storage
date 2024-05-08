@@ -1,4 +1,6 @@
 const express = require('express')
+const path = require('path');
+require('module-alias/register');
 const app = express()
 const port = 3098
 
@@ -6,6 +8,14 @@ const { globalLogger }  = require("./logger");
 
 app.use(express.json()); // for parsing application/json
 app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencod
+
+// 设置别名，以便于在项目中使用
+const aliases = {
+  '@': path.resolve(__dirname, './'),
+  // 其他别名...
+};
+
+require('module-alias').addAliases(aliases);
 
 function winston(req, res, next){ // 全局日志记录
     globalLogger.info(JSON.stringify({
@@ -47,9 +57,9 @@ app.all("*", function (req, res, next) {
 // ----------------------------------------------------------------
 
 // 路由
-// const word = require('./router/word/word')
 
-// app.use('/word' , word)
+const usersRouter = require("./router/user/register");
+app.use("/api/users", usersRouter);
 
 app.get('/', (req, res) => {
     res.json('Hello World!')
