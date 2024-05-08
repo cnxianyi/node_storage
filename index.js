@@ -1,8 +1,11 @@
 const express = require('express')
 const app = express()
-const port = 3000
+const port = 3098
 
 const { globalLogger }  = require("./logger");
+
+app.use(express.json()); // for parsing application/json
+app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencod
 
 function winston(req, res, next){ // 全局日志记录
     globalLogger.info(JSON.stringify({
@@ -23,12 +26,30 @@ app.use(winston) // 全局日志记录
 
 const { connection }  = require("./config/mysql2");
 
+// 跨域
+
+app.all("*", function (req, res, next) {
+	res.header("Access-Control-Allow-Origin", "*");
+	res.header("Access-Control-Allow-Headers", "*");
+	res.header("Access-Control-Allow-Methods", "*");
+
+	// 允许content-type
+	res.header("Access-Control-Allow-Origin", "*");
+	// 允许前端请求中包含Content-Type这个请求头
+	res.header(
+		"Access-Control-Allow-Headers",
+		"DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type, X-Custom-Header, Access-Control-Expose-Headers, Token, Authorization"
+	);
+	res.header("Access-Control-Allow-Credentials", "true");
+	next();
+});
+
 // ----------------------------------------------------------------
 
 // 路由
-const word = require('./router/word/word')
+// const word = require('./router/word/word')
 
-app.use('/word' , word)
+// app.use('/word' , word)
 
 app.get('/', (req, res) => {
     res.json('Hello World!')
