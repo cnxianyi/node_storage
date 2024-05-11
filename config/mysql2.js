@@ -66,17 +66,16 @@ connection.query( // 用户表
     `
     CREATE TABLE IF NOT EXISTS users (
       id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-      username VARCHAR(50) NOT NULL,
+      nickname VARCHAR(50) NOT NULL,
       password VARCHAR(255) NOT NULL,
       email VARCHAR(100) NOT NULL,
-      vip BOOLEAN DEFAULT FALSE,
+      vip TINYINT UNSIGNED DEFAULT 0,
       invite_code VARCHAR(20),
       registration_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-      last_login DATETIME,
+      last_login DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       status ENUM('active', 'disabled') DEFAULT 'active',
       vip_expiry_date DATETIME,
       uploaded_file_size INT UNSIGNED DEFAULT 0,
-      UNIQUE (username),
       UNIQUE (email),
       display VARCHAR(255) DEFAULT ''
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;  

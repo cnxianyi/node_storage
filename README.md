@@ -1,61 +1,29 @@
-# React_storage
+# 文件管理系统后端
 
-## 需求描述
+欢迎来到文件管理系统后端项目！本项目基于 Node.js 和 Express 框架开发，提供 RESTful API 接口，用于文件管理和用户认证。
 
-1. 用户注册
-  * 邮箱
-  * 密码
-  * 邀请码
-2. 用户登录
-  * 邮箱
-  * 密码
-3. 文件上传
-  * 文件名 上传文件的文件名
-  * 文件索引 默认为文件名
-  * 文件大小
-  * 文件类型 img code zip
-  * 文件最大下载次数
-  * 文件下载次数
-  * 文件上传者 外键，为id
-  * 文件是否封禁 是或否
-  * 文件是否被删除 是或否
-  * 是否记录文件下载IP 是或否
-  * 文件是否预览 是或否
-  * 文件版本 1.0 默认值
+## 技术栈
 
-CREATE TABLE IF NOT EXISTS files (
-    id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    file_name VARCHAR(255) NOT NULL,
-    file_index VARCHAR(255) NOT NULL,
-    file_size INT UNSIGNED NOT NULL,
-    file_type TINYINT UNSIGNED NOT NULL,
-    max_download_count INT UNSIGNED DEFAULT 0,
-    download_count INT UNSIGNED DEFAULT 0,
-    uploader_id INT UNSIGNED,
-    FOREIGN KEY (uploader_id) REFERENCES users(id),
-    is_banned TINYINT(1) DEFAULT 0,
-    is_deleted TINYINT(1) DEFAULT 0,
-    record_download_ip TINYINT(1) DEFAULT 1,
-    allow_preview TINYINT(1) DEFAULT 0,
-    file_version VARCHAR(10) DEFAULT '1.0',
-    last_accessed_at DATETIME,
-    cloud TINYINT(1) DEFAULT 1,
-    expiration_date DATETIME,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+- **Node.js**: 用于构建后端服务的 JavaScript 运行时环境。
+- **Express**: 用于创建 RESTful API 的 Web 框架。
+- **MySQL**: 用于持久化存储用户和文件信息的关系型数据库。
+- **JWT**: 用于用户身份认证和生成令牌。
 
-## 服务器监控表
+## 功能特性
 
-CREATE TABLE IF NOT EXISTS server_usage (
-    id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    daily_uploads INT UNSIGNED DEFAULT 0,
-    total_uploaded INT UNSIGNED DEFAULT 0,
-    daily_uploaded_size INT UNSIGNED DEFAULT 0,
-    total_uploaded_size BIGINT UNSIGNED DEFAULT 0,
-    total_downloads INT UNSIGNED DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+- 用户注册和登录功能，确保安全的用户身份认证。
+- 文件上传和下载功能，方便用户上传、下载和管理文件。
+- 数据库存储，持久化用户和文件信息。
+- RESTful API 接口，提供用户和文件的增删改查操作。
 
-## 其他
+## 使用方法
+
+1. 克隆本仓库到本地。
+2. 运行 `npm install` 安装依赖。
+3. 配置数据库连接信息。
+4. 运行 `npm run start` 启动后端服务。
+5. 后端服务将运行在默认端口 [http://localhost:3098](http://localhost:3098)。
+
+## 贡献
+
+如果你对项目有任何建议或改进意见，欢迎提交 issue 或 pull request，让我们共同打造一个更好的文件管理系统！

@@ -58,8 +58,12 @@ app.all("*", function (req, res, next) {
 
 // 路由
 
-const usersRouter = require("./router/user/register");
+const usersRouter = require("./router/user/login");
+const uploadRouter = require("./router/upload/index");
+const fileRouter = require("./router/file/index");
 app.use("/api/users", usersRouter);
+app.use("/api/uploads", uploadRouter);
+app.use("/api/files", fileRouter);
 
 app.get('/', (req, res) => {
     res.json('Hello World!')
