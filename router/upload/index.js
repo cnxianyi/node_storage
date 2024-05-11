@@ -33,13 +33,14 @@ router.post('/add', auth, (req, res, next) => {
           err: err.message
         })
       }
+      console.log(req.file);
       const fileName = req.file.originalname
       const fileSize = req.file.size
-      const fileType = req.file.mimetype
+      const fileType = req.file.mimetype // mimetype: 'application/msword',
       const uploaderId = req.userInfo.id
       const fileIndex = req.file.filename
       const sql = `INSERT INTO files (file_name, file_index , file_size, file_type, uploader_id) VALUES (?, ?, ?, ?, ?)`;
-      connection.query(sql, [fileName, fileIndex , fileSize, fileType, uploaderId], (error, results, fields) => {
+      connection.query(sql, [fileName, fileIndex , fileSize, 0, uploaderId], (error, results, fields) => {
         if (error) {
           console.error("Error inserting file:", error);
           return res.status(500).json({
