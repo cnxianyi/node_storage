@@ -121,7 +121,7 @@ router.post("/login", function (req, res, next) {
     `,
       function (error, results, fields) {
         if (error) console.log(error)
-        if (results || (results.length == 0)) {
+        if (results?.length || (results.length == 0)) {
           res.status(422).json({
             code: 422,
             error: "账号或密码错误",
