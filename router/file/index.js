@@ -1,156 +1,168 @@
-const connection = require("@/config/mysql2");
-const auth = require("@/tools/auth");
+// 文件路径: routes.js
+
 const express = require("express");
 const router = express.Router();
-const path = require('path');
+const upload = require("@/tools/multer");
 const fs = require("fs");
-
+const path = require("path");
+const auth = require("@/tools/auth");
+const db = require("@/config/mysql2");
+const { nsLog } = require("@/logger");
 
 // 设置静态文件目录
 //router.use('/temp', express.static(path.join(__dirname, "../../uploads/temp")));
 
-router.get('/:path', (req, res) => {
-  const tempPath = "../../uploads/temp/"
-  const filePath = "../../uploads/files/"
-  if (req.params.path.slice(0, 4) == 'temp') {
-    const Path = path.join(__dirname,
-      `${tempPath}${req.params.path}`); // 替换为你的文件路径
+// 文件下载路由
+router.get('/:path', async (req, res) => {
+  const tempPath = "../../uploads/temp/";
+  const filePath = "../../uploads/files/";
+  
+  if (req.params.path.slice(0, 4) === 'temp') {
+    const Path = path.join(__dirname, `${tempPath}${req.params.path}`);
     res.download(Path, (err) => {
       if (err) {
-        console.error('文件下载失败:', err);
+        nsLog.error(JSON.stringify({
+            message: '文件下载失败',
+            error: err
+        }));
         res.status(404).send('文件未找到');
       } else {
-        console.log('文件下载成功');
+        nsLog.info('文件下载成功');
       }
     });
   } else {
-    const Path = path.join(__dirname,
-      `${filePath}${req.params.path}`); // 替换为你的文件路径
-
-    connection.query(
-      `
-        SELECT is_deleted , is_banned , file_name
+    const Path = path.join(__dirname, `${filePath}${req.params.path}`);
+    try {
+      const results = await db.query(`
+        SELECT is_deleted, is_banned, file_name
         FROM files
-        WHERE file_index = '${req.params.path}'
-      `, (error, results) => {
-      if (error) {
-        console.log(error);
-      } else {
-        if (results[0].is_banned === 0 && results[0].is_deleted === 0) {
-          const fileName = 'XIANYI-STORAGE-' + decodeURIComponent(escape(results[0].file_name))
-          res.download(Path, fileName, (err) => {
-            if (err) {
-              console.error('文件下载失败:', err);
-              res.status(404).send('文件未找到');
-            } else {
-              console.log(req.params.path);
-              // 待优化
-              // 1. 通过path解码获取用户...
+        WHERE file_index = ?
+      `, [req.params.path]);
 
-              const query = "UPDATE files SET download_count = download_count + 1 WHERE file_index = ?";
-              connection.query(query, [req.params.path], (error, results) => {
-                if (error) {
-                  //console.error("更新下载次数失败:", error); // , error);
-                } else {
-                  //console.log("更新下载次数成功:", results);// , results);
-                }
-              });
-              //console.log('文件下载成功');
-
+      if (results.length > 0 && results[0].is_banned === 0 && results[0].is_deleted === 0) {
+        const fileName = 'XIANYI-STORAGE-' + decodeURIComponent(escape(results[0].file_name));
+        res.download(Path, fileName, async (err) => {
+          if (err) {
+            nsLog.error(JSON.stringify({
+                message: '文件下载失败',
+                error: err
+            }));
+            res.status(404).send('文件未找到');
+          } else {
+            nsLog.info(req.params.path);
+            // 更新下载次数
+            try {
+              await db.query(`
+                UPDATE files
+                SET download_count = download_count + 1
+                WHERE file_index = ?
+              `, [req.params.path]);
+            } catch (updateError) {
+              nsLog.error(JSON.stringify({
+                message: '更新下载次数失败',
+                error: updateError
+            }));
             }
-          });
-        } else {
-          res.status(404).json({
-            error: "File is no defined"
-          })
-        }
+          }
+        });
+      } else {
+        res.status(404).json({
+          error: "File is not defined"
+        });
       }
-    })
+    } catch (error) {
+      nsLog.error(JSON.stringify({
+        message: 'Internal Server Error',
+        error: error
+    }));
+      res.status(500).json({
+        error: "Internal Server Error"
+      });
+    }
   }
 });
 
-router.post('/list', auth, (req, res) => {
-  const query = `SELECT * FROM files WHERE uploader_id = ${req.userInfo.id} ORDER BY created_at DESC`;
-  connection.query(query, (error, resultsFiles) => {
-    if (error) {
-      console.error("获取数据失败:", error);
-      res.status(500).json({ error: "获取数据失败" });
-    } else {
-      //console.log("获取数据成功:", results);
-      let size = 0
-      resultsFiles.map((item) => {
-        console.log(item.file_size);
-        size += item.file_size
-      })
-      connection.query(
-        `
-        UPDATE users
-        SET uploaded_file_size = ${size}
-        WHERE id = ${req.userInfo.id}
-        `,
-        (error, results) => {
-          if (error) {
-            console.log(error)
-          } else {
-            res.status(200).json({
-              code: 200,
-              data: {
-                file: resultsFiles,
-                user: req.userInfo
-              },
-              message: "success"
-            });
-          }
-        }
-      )
-    }
-  });
+// 获取文件列表路由
+router.post('/list', auth, async (req, res) => {
+  try {
+    const resultsFiles = await db.query(`
+      SELECT * FROM files
+      WHERE uploader_id = ?
+      ORDER BY created_at DESC
+    `, [req.userInfo.id]);
+
+    let size = 0;
+    resultsFiles.forEach((item) => {
+      size += item.file_size;
+    });
+
+    await db.query(`
+      UPDATE users
+      SET uploaded_file_size = ?
+      WHERE id = ?
+    `, [size, req.userInfo.id]);
+
+    res.status(200).json({
+      code: 200,
+      data: {
+        file: resultsFiles,
+        user: req.userInfo
+      },
+      message: "success"
+    });
+  } catch (error) {
+    nsLog.error(JSON.stringify({
+        message: '获取数据失败',
+        error: error
+    }));
+    res.status(500).json({
+      error: "获取数据失败"
+    });
+  }
 });
 
-router.post('/delete', auth, (req, res) => {
-  console.log(req.userInfo.id);
-  const query = `UPDATE files
-  SET is_deleted = 1
-  WHERE id = ${req.body.id}
-  AND uploader_id = ${req.userInfo.id}
-  AND file_index = '${req.body.file_index}'`
-  connection.query(query, (error, results) => {
-    if (error) {
-      res.status(404).json({
-        error: error
-      })
-    } else {
-      if (results.changedRows == 1) {
-        const filePath = `uploads/files/${req.body.file_index}`
-        // 检查文件是否存在
-        fs.access(filePath, fs.constants.F_OK, (err) => {
+// 删除文件路由
+router.post('/delete', auth, async (req, res) => {
+  try {
+    const results = await db.query(`
+      UPDATE files
+      SET is_deleted = 1
+      WHERE id = ? AND uploader_id = ? AND file_index = ?
+    `, [req.body.id, req.userInfo.id, req.body.file_index]);
+
+    if (results.changedRows === 1) {
+      const filePath = path.join(__dirname, `../../uploads/files/${req.body.file_index}`);
+      // 检查文件是否存在
+      fs.access(filePath, fs.constants.F_OK, (err) => {
+        if (err) {
+          nsLog.error(JSON.stringify({
+            message: 'files File not found',
+            error: err
+        }));
+          return res.status(404).send('File not found');
+        }
+        // 删除文件
+        fs.unlink(filePath, (err) => {
           if (err) {
-            console.error(err);
-            return res.status(404).send('File not found');
+            nsLog.error(JSON.stringify({
+                message: 'Internal Server Error',
+                error: err
+            }));
+            return res.status(500).send('Internal Server Error');
           }
-          // 删除文件
-          fs.unlink(filePath, (err) => {
-            if (err) {
-              console.error(err);
-              return res.status(500).send('Internal Server Error');
-            }
-            res.status(200).json({ message: 'File deleted successfully' });
-          });
+          res.status(200).json({ message: 'File deleted successfully' });
         });
-
-      } else {
-        res.status(404).json({
-          error: "文件已被删除"
-        })
-      }
+      });
+    } else {
+      res.status(404).json({
+        error: "文件已被删除"
+      });
     }
-  })
-
-
-  // const filename = req.params.filename;
-  // const filePath = path.join(__dirname, 'your-folder', filename); // 替换 'your-folder' 为你的文件存储路径
-
-
+  } catch (error) {
+    res.status(500).json({
+      error: error.message
+    });
+  }
 });
 
 module.exports = router;

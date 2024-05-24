@@ -34,7 +34,7 @@ app.use(winston) // 全局日志记录
 
 // mysql
 
-const { connection }  = require("./config/mysql2");
+// const { connection }  = require("./config/mysql2");
 
 // 跨域
 
