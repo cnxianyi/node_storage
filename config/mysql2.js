@@ -110,7 +110,7 @@ setInterval(async () => {
                 file_name VARCHAR(255) NOT NULL,
                 file_index VARCHAR(255) NOT NULL,
                 file_size INT UNSIGNED NOT NULL,
-                file_type TINYINT UNSIGNED NOT NULL,
+                file_type VARCHAR(20) NOT NULL,
                 max_download_count INT UNSIGNED DEFAULT 0,
                 download_count INT UNSIGNED DEFAULT 0,
                 uploader_id BIGINT UNSIGNED,

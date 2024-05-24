@@ -57,48 +57,50 @@ router.post("/info", auth, (req, res) => {
 
 // 登录
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-
-  if (email && password) {
+    const { email, password } = req.body;
+  
+    if (!email || !password) {
+      return res.status(422).json({
+        code: 422,
+        message: "请求体错误",
+      });
+    }
+  
     const query = `
       SELECT id, nickname, email, vip, last_login, status, uploaded_file_size, display
       FROM users
       WHERE email = ? AND password = ?
     `;
     const params = [email, password];
-
+  
     try {
       const results = await db.query(query, params);
       if (results.length === 0) {
-        res.status(422).json({
+        return res.status(422).json({
           code: 422,
           error: "账号或密码错误",
         });
-      } else {
-        res.status(200).json({
-          code: 200,
-          message: `登录成功! 欢迎您 ${results[0].nickname}`,
-          token: jwt.sign({ email: results[0].email, nickname: results[0].nickname }, 'storage', { expiresIn: '1h' }),
-          data: results[0],
-        });
       }
+  
+      const user = results[0];
+      res.status(200).json({
+        code: 200,
+        message: `登录成功! 欢迎您 ${user.nickname}`,
+        token: jwt.sign({ email: user.email, nickname: user.nickname }, 'storage', { expiresIn: '1h' }),
+        data: user,
+      });
+  
     } catch (error) {
       nsLog.error(JSON.stringify({
         message: '服务器错误',
         error: error
-    }));
+      }));
       res.status(500).json({
         code: 500,
         error: "服务器错误",
       });
     }
-  } else {
-    res.status(422).json({
-      code: 422,
-      message: "请求体错误",
-    });
-  }
-});
+  });
 
 // 修改密码
 router.post("/edit/password", auth, async (req, res) => {
